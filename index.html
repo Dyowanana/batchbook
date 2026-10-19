@@ -77,6 +77,8 @@
 html, body { height: 100%; }
 body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Native dropdown lists don't inherit the page background, so give their options the theme colors. */
+select option, select optgroup { background-color: var(--card); color: var(--fg); }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
 
@@ -138,7 +140,16 @@ button { cursor: pointer; }
 .filter { border: 0; background: transparent; color: var(--muted); border-radius: 4px; padding: 4px 6px; font-size: 13px; max-width: 160px; }
 .filter:hover { background: var(--hover); color: var(--fg); }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px max(20px, env(safe-area-inset-right, 0px)) 0 20px; font-size: 12px; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend button { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.legend button:hover { background: var(--hover); color: var(--fg); }
+.legend button.off { opacity: .4; }
+.pick-wrap { position: relative; }
+.pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 15; min-width: 220px; max-height: 60vh; overflow-y: auto; background: var(--card); border-radius: 6px; box-shadow: 0 0 0 1px var(--line), 0 8px 24px rgba(15,15,15,.16); padding: 6px; display: grid; gap: 1px; }
+.pop label { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 13.5px; }
+.pop label:hover { background: var(--hover); }
+.pop input { accent-color: var(--accent); margin: 0; }
+.pop .pop-h { font-size: 11.5px; color: var(--faint); padding: 6px 8px 2px; }
+.pop .pop-actions { display: flex; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; background: var(--t-gray-dot); }
 
 .cal-wrap { flex: 1; overflow: auto; padding: 8px max(20px, env(safe-area-inset-right, 0px)) 24px 20px; min-height: 0; }
@@ -157,6 +168,8 @@ button { cursor: pointer; }
 .cal.week .day { min-height: 420px; }
 
 .chip { background: var(--card); box-shadow: var(--shadow); border-radius: 4px; padding: 4px 6px; border: 0; text-align: left; width: 100%; display: grid; gap: 2px; cursor: grab; min-width: 0; }
+.chip.ins-before { box-shadow: 0 -3px 0 -1px var(--accent), var(--shadow); }
+.day.ins-end::after { content: ""; height: 2px; border-radius: 2px; background: var(--accent); margin-top: 1px; }
 .chip:hover { background: color-mix(in srgb, var(--card) 94%, var(--fg)); }
 .chip-top { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .chip-title { font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -165,11 +178,11 @@ button { cursor: pointer; }
 .cal.week .chip-title { white-space: normal; }
 
 /* ---------- drawer ---------- */
-.scrim { position: fixed; inset: 0; background: rgba(15,15,15,.25); z-index: 20; }
-.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: var(--bg); box-shadow: -1px 0 0 var(--line), -12px 0 32px rgba(15,15,15,.12); z-index: 21; display: flex; flex-direction: column;
-  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
-.drawer-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
-.drawer-body { overflow-y: auto; padding: 8px 40px 40px; display: grid; gap: 16px; align-content: start; }
+.scrim { position: fixed; inset: 0; background: rgba(15,15,15,.4); z-index: 20; }
+.drawer { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(820px, calc(100% - 48px)); height: min(880px, calc(100% - 56px)); background: var(--bg); border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 24px 64px rgba(15,15,15,.25); z-index: 21; display: flex; flex-direction: column; overflow: hidden; }
+.drawer-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.drawer-body { overflow-y: auto; padding: 28px 64px 56px; display: grid; gap: 18px; align-content: start; flex: 1; }
+.d-title { font-size: 34px; }
 .d-title { font-size: 28px; font-weight: 700; line-height: 1.2; border: 0; outline: 0; background: transparent; width: 100%; padding: 0; resize: none; overflow: hidden; }
 .d-title::placeholder { color: var(--faint); }
 .props { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 2px 8px; align-items: center; }
@@ -241,7 +254,10 @@ button { cursor: pointer; }
   .side-head { padding-right: max(14px, env(safe-area-inset-right, 0px)); }
   .list { max-height: 42vh; padding-right: max(10px, env(safe-area-inset-right, 0px)); }
   .bar, .legend, .cal-wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .drawer-body { padding: 8px 20px 40px; }
+  .drawer { top: 0; left: 0; transform: none; width: 100%; height: 100%; border-radius: 0;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .drawer-body { padding: 16px 20px 40px; }
+  .d-title { font-size: 26px; }
   .props { grid-template-columns: 96px minmax(0, 1fr); }
   .row { grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) auto; }
   .row .handle-in { display: none; }
@@ -252,10 +268,11 @@ button { cursor: pointer; }
 <div class="app">
   <aside class="side" aria-label="Content ideas">
     <div class="side-head">
-      <div class="ws"><span class="ws-mark">B</span>Batchbook</div>
+      <div class="ws"><span class="ws-mark">B</span>Batchbook<span class="spacer"></span><button class="btn primary" id="new-idea" type="button">+ New idea</button></div>
       <div class="quick" id="quick-box">
-        <textarea id="quick" rows="2" placeholder="Write an idea, paste a link, or paste a screenshot. One per line for several."></textarea>
-        <div class="quick-row"><span id="quick-hint">Enter to add, Shift+Enter for a new line</span><button class="btn primary" id="quick-add" type="button">Add</button></div>
+        <textarea id="quick" rows="2" placeholder="Quick add: write an idea or paste a link. One per line for several."></textarea>
+        <div class="quick-row"><span id="quick-hint">Enter to add, Shift+Enter for a new line</span>
+          <span style="display:flex;gap:2px"><label class="btn" for="quick-file" id="quick-upload" title="Upload screenshots or a video. The text on screen becomes slides." hidden>Upload</label><input type="file" id="quick-file" accept="image/*,video/*" multiple style="position:absolute;width:1px;height:1px;opacity:0"><button class="btn" id="quick-add" type="button">Add</button></span></div>
       </div>
       <input class="search" id="search" type="search" placeholder="Search ideas" aria-label="Search ideas">
       <div class="tabs-row">
@@ -289,9 +306,13 @@ button { cursor: pointer; }
       </div>
       <span class="spacer"></span>
       <select class="filter" id="f-brand" aria-label="Filter by brand"></select>
-      <select class="filter" id="f-creator" aria-label="Filter by creator"></select>
+      <div class="pick-wrap">
+        <button class="filter" type="button" id="f-creator" aria-haspopup="true" aria-expanded="false">All creators ▾</button>
+        <div class="pop" id="f-creator-pop" hidden></div>
+      </div>
       <select class="filter" id="f-sell" aria-label="Filter by goal"></select>
       <button class="btn" id="open-settings" type="button">Brands &amp; creators</button>
+      <button class="btn" id="theme" type="button" title="Switch between light, dark and your device's setting">Theme: Auto</button>
     </div>
     <div class="legend" id="legend"></div>
     <div class="cal-wrap"><div class="cal" id="cal"></div></div>
@@ -312,7 +333,7 @@ const FORMATS = ["Carousel", "Single image", "Video", "Text post", "Thread"];
 const LOCAL_KEY = "batchbook-v1";
 
 const S = { brands: {}, creators: {}, ideas: {} };
-const ui = { view: "month", cursor: startOfDay(new Date()), tab: "un", sort: "persona", q: "", brand: "", creator: "", sell: "", openId: null, mode: "loading", readOnly: false };
+const ui = { view: "month", cursor: startOfDay(new Date()), tab: "un", sort: "persona", q: "", brand: "", creators: new Set(), sell: "", openId: null, mode: "loading", readOnly: false };
 let db = null;
 
 /* ---------- helpers ---------- */
@@ -358,7 +379,7 @@ function writeFailed(e) {
   else if (code === "quota_exceeded") toast("The calendar is full. Delete some old ideas to add new ones.");
   else toast("Couldn't save that change. Check your connection and try again.");
 }
-function put(col, obj) { S[col][obj.id] = obj; persist(col, obj.id, obj); renderAll(); }
+function put(col, obj) { if (draftIdea && draftIdea.id === obj.id) draftIdea = null; S[col][obj.id] = obj; persist(col, obj.id, obj); renderAll(); }
 function patch(col, id, fields) { const cur = S[col][id]; if (!cur) return; put(col, { ...cur, ...fields }); }
 function remove(col, id) { delete S[col][id]; persist(col, id, null); renderAll(); }
 
@@ -371,6 +392,7 @@ async function boot() {
       db.collection(col).onSnapshot(snap => {
         const next = {};
         snap.docs.forEach(d => { next[d.id] = { ...d.data(), id: d.id }; });
+        if (col === "ideas" && draftIdea && !next[draftIdea.id]) next[draftIdea.id] = draftIdea;
         S[col] = next;
         renderAll(true);
       }, () => { toast("Live updates stopped. Reload the page to reconnect."); });
@@ -385,7 +407,11 @@ async function boot() {
 }
 
 /* ---------- demo content and backups (used when running outside Claude) ---------- */
-function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(S)); } catch (e) {} }
+function saveLocal() {
+  const ideas = { ...S.ideas };
+  if (draftIdea) delete ideas[draftIdea.id];
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ ...S, ideas })); } catch (e) {}
+}
 function loadDemo() {
   const day = n => ymd(addDays(startOfDay(new Date()), n));
   S.brands = {
@@ -444,7 +470,7 @@ async function importBackup(file) {
 function brandOf(idea) { const c = S.creators[idea.creatorId]; return idea.brandId || (c && c.brandId) || ""; }
 function matches(idea) {
   if (ui.brand && brandOf(idea) !== ui.brand) return false;
-  if (ui.creator && idea.creatorId !== ui.creator) return false;
+  if (ui.creators.size && !ui.creators.has(idea.creatorId)) return false;
   if (ui.sell && idea.sell !== ui.sell) return false;
   if (ui.q) {
     const hay = [idea.title, idea.content, (idea.slides || []).join(" "), idea.pillar, idea.link, (S.creators[idea.creatorId] || {}).name].join(" ").toLowerCase();
@@ -544,22 +570,45 @@ function chip(i) {
 }
 function renderLegend() {
   const cs = sortedVals(S.creators).filter(c => !ui.brand || c.brandId === ui.brand);
-  $("legend").innerHTML = cs.map(c => `<span><i class="dot" data-c="${esc(c.color)}"></i>${esc(c.name)}${Object.keys(S.brands).length > 1 && S.brands[c.brandId] ? ` <span style="color:var(--faint)">${esc(S.brands[c.brandId].name)}</span>` : ""}</span>`).join("");
+  $("legend").innerHTML = cs.map(c => `<button type="button" data-legend="${esc(c.id)}" class="${ui.creators.size && !ui.creators.has(c.id) ? "off" : ""}" title="Show or hide ${esc(c.name)}"><i class="dot" data-c="${esc(c.color)}"></i>${esc(c.name)}${Object.keys(S.brands).length > 1 && S.brands[c.brandId] ? ` <span style="color:var(--faint)">${esc(S.brands[c.brandId].name)}</span>` : ""}</button>`).join("");
+}
+function visibleCreators() { return sortedVals(S.creators).filter(c => !ui.brand || c.brandId === ui.brand); }
+function setCreators(ids) {
+  ui.creators = new Set(ids);
+  try { localStorage.setItem("batchbook-creators", JSON.stringify([...ui.creators])); } catch (e) {}
+  renderAll();
+}
+function toggleCreator(id) {
+  const all = visibleCreators().map(c => c.id);
+  const on = ui.creators.size ? new Set(ui.creators) : new Set(all);
+  on.delete("__none__");
+  on.has(id) ? on.delete(id) : on.add(id);
+  setCreators(on.size === all.length ? [] : on.size ? [...on] : ["__none__"]);
+}
+function renderCreatorPop() {
+  const pop = $("f-creator-pop");
+  const brands = sortedVals(S.brands).filter(b => !ui.brand || b.id === ui.brand);
+  const row = c => `<label><input type="checkbox" data-pick="${esc(c.id)}"${!ui.creators.size || ui.creators.has(c.id) ? " checked" : ""}><i class="dot" data-c="${esc(c.color)}"></i>${esc(c.name)}</label>`;
+  const groups = brands.map(b => { const cs = visibleCreators().filter(c => c.brandId === b.id); return cs.length ? (brands.length > 1 ? `<div class="pop-h">${esc(b.name)}</div>` : "") + cs.map(row).join("") : ""; }).join("");
+  const loose = visibleCreators().filter(c => !S.brands[c.brandId]).map(row).join("");
+  pop.innerHTML = (groups + loose || `<div class="pop-h">No creators yet</div>`) +
+    `<div class="pop-actions"><button class="btn" type="button" data-pick-all>Show all</button><button class="btn" type="button" data-pick-none>Clear</button></div>`;
 }
 function renderFilters() {
   const keep = (sel, html, val) => { if (sel.dataset.html !== html) { sel.innerHTML = html; sel.dataset.html = html; } sel.value = val; };
   const brands = sortedVals(S.brands);
   if (ui.brand && !S.brands[ui.brand]) ui.brand = "";
-  if (ui.creator && !S.creators[ui.creator]) ui.creator = "";
+  if (Object.keys(S.creators).length) [...ui.creators].forEach(id => { if (id !== "__none__" && !S.creators[id]) ui.creators.delete(id); });
   keep($("f-brand"), `<option value="">All brands</option>` + brands.map(b => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join(""), ui.brand);
-  const cs = sortedVals(S.creators).filter(c => !ui.brand || c.brandId === ui.brand);
-  keep($("f-creator"), `<option value="">All creators</option>` + cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join(""), ui.creator);
+  const picked = [...ui.creators].map(id => S.creators[id]).filter(Boolean);
+  $("f-creator").textContent = (!picked.length ? (ui.creators.size ? "No creators" : "All creators") : picked.length <= 2 ? picked.map(c => c.name).join(", ") : picked.length + " creators") + " ▾";
+  if (!$("f-creator-pop").hidden) renderCreatorPop();
   keep($("f-sell"), `<option value="">Any goal</option>` + Object.entries(SELL).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join(""), ui.sell);
 }
 
 /* ---------- creating ideas ---------- */
 function newIdea(fields) {
-  const creator = ui.creator ? S.creators[ui.creator] : null;
+  const creator = ui.creators.size === 1 ? S.creators[[...ui.creators][0]] : null;
   const brandId = creator ? creator.brandId : (ui.brand || (sortedVals(S.brands)[0] || {}).id || "");
   return { id: uid("idea"), title: "", slides: ["", ""], content: "", link: "", brandId, creatorId: creator ? creator.id : "", pillar: "", sell: "soft", format: "", date: "", status: "idea", order: Date.now(), createdAt: new Date().toISOString(), ...fields };
 }
@@ -627,7 +676,10 @@ function openDrawer(id) {
   autosize($("d-title"));
   if (!i.title) $("d-title").focus();
 }
-function closeDrawer() { flushDrawer(); ui.openId = null; $("drawer").hidden = true; if ($("settings").hidden) $("scrim").hidden = true; }
+function closeDrawer() {
+  flushDrawer();
+  if (draftIdea && draftIdea.id === ui.openId) { delete S.ideas[draftIdea.id]; draftIdea = null; ui.openId = null; renderAll(); }
+  ui.openId = null; $("drawer").hidden = true; if ($("settings").hidden) $("scrim").hidden = true; }
 function autosize(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
 function renderSlides(slides) {
   const box = $("d-slides"); if (!box) return;
@@ -661,10 +713,11 @@ function renderOcrBox() {
   const box = $("d-ocr"); if (!box) return;
   box.hidden = ocrMode === "none";
   box.innerHTML = ocrBusy ? `<span class="busy">Reading the text on screen…</span>` :
-    `<span>Paste a screenshot (Ctrl+V), drop files here, or</span><label for="d-ocr-file">choose images or a video</label><span>to copy the on-screen text into slides.</span><input type="file" id="d-ocr-file" accept="image/*,video/*" multiple>`;
+    `<label class="btn primary" for="d-ocr-file" style="color:#fff">Upload screenshots or a video</label><span>or paste one (Ctrl+V) or drop files here. The text on screen becomes slides.</span><input type="file" id="d-ocr-file" accept="image/*,video/*" multiple>`;
 }
 function renderQuickHint() {
-  $("quick-hint").textContent = ocrBusy ? "Reading the text on screen…" : "Enter to add, Shift+Enter for a new line";
+  $("quick-hint").textContent = ocrBusy ? "Reading the text on screen…" : ocrMode === "none" ? "Enter to add, Shift+Enter for a new line" : "Enter to add. You can also paste a screenshot.";
+  $("quick-upload").hidden = ocrMode === "none";
 }
 function setOcrBusy(v) { ocrBusy = v; renderOcrBox(); renderQuickHint(); }
 async function videoFrames(file, n = 4) {
@@ -958,24 +1011,43 @@ document.addEventListener("dragstart", e => {
   dragId = el.dataset.id; el.classList.add("dragging");
   e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId);
 });
-document.addEventListener("dragend", e => { document.querySelectorAll(".dragging,.drop").forEach(n => n.classList.remove("dragging", "drop")); dragId = null; });
+function clearDropMarks() { document.querySelectorAll(".drop,.ins-before,.ins-end").forEach(n => n.classList.remove("drop", "ins-before", "ins-end")); }
+document.addEventListener("dragend", e => { clearDropMarks(); document.querySelectorAll(".dragging").forEach(n => n.classList.remove("dragging")); dragId = null; });
 function dropZone(e) { return e.target.closest && (e.target.closest(".day[data-date]") || e.target.closest("#list")); }
+/* The chip the dragged post would land in front of, or null for the end of the day. */
+function chipAfter(day, y) {
+  return [...day.querySelectorAll(".chip[data-id]")].find(c => c.dataset.id !== dragId && y < c.getBoundingClientRect().top + c.offsetHeight / 2) || null;
+}
 document.addEventListener("dragover", e => {
   if (!dragId) return; const z = dropZone(e); if (!z) return;
   e.preventDefault(); e.dataTransfer.dropEffect = "move";
-  document.querySelectorAll(".drop").forEach(n => { if (n !== z) n.classList.remove("drop"); });
+  document.querySelectorAll(".drop,.ins-before,.ins-end").forEach(n => { if (n !== z) n.classList.remove("drop", "ins-before", "ins-end"); });
   z.classList.add("drop");
+  if (z.dataset.date) {
+    const next = chipAfter(z, e.clientY);
+    z.querySelectorAll(".ins-before").forEach(c => { if (c !== next) c.classList.remove("ins-before"); });
+    if (next) { next.classList.add("ins-before"); z.classList.remove("ins-end"); } else z.classList.add("ins-end");
+  }
 });
 document.addEventListener("drop", e => {
   const z = dropZone(e); if (!z || !dragId) return;
   e.preventDefault();
   const id = dragId; dragId = null;
+  const next = z.dataset.date ? chipAfter(z, e.clientY) : null;
+  clearDropMarks();
   const idea = S.ideas[id]; if (!idea) return;
-  if (z.id === "list") { if (idea.date) { patch("ideas", id, { date: "" }); toast("Moved back to ideas"); } }
-  else if (idea.date !== z.dataset.date) {
-    patch("ideas", id, { date: z.dataset.date, status: idea.status === "idea" ? "ready" : idea.status });
-    if (!idea.creatorId) toast("Scheduled. Click it to assign a creator.");
-  }
+  if (z.id === "list") { if (idea.date) { patch("ideas", id, { date: "" }); toast("Moved back to ideas"); } return; }
+  const date = z.dataset.date;
+  const sameDay = Object.values(S.ideas).filter(i => i.date === date && i.id !== id).sort(ideaSort);
+  let order;
+  if (next) {
+    const k = sameDay.findIndex(i => i.id === next.dataset.id);
+    const after = sameDay[k], before = sameDay[k - 1];
+    order = before ? ((before.order ?? 0) + (after.order ?? 0)) / 2 : (after.order ?? 0) - 1;
+  } else order = sameDay.length ? (sameDay[sameDay.length - 1].order ?? 0) + 1 : (idea.order ?? Date.now());
+  if (idea.date === date && order === idea.order) return;
+  patch("ideas", id, { date, order, status: idea.status === "idea" ? "ready" : idea.status });
+  if (idea.date !== date && !idea.creatorId) toast("Scheduled. Click it to assign a creator.");
 });
 
 /* ---------- wiring ---------- */
@@ -983,10 +1055,22 @@ document.addEventListener("click", e => {
   const card = e.target.closest(".idea[data-id], .chip[data-id]");
   if (card) return openDrawer(card.dataset.id);
   const add = e.target.closest("[data-add]");
-  if (add) { const idea = newIdea({ date: add.dataset.add, status: "ready" }); put("ideas", idea); openDrawer(idea.id); }
+  if (add && ui.mode !== "loading") openDraft(newIdea({ date: add.dataset.add, status: "ready" }));
 });
 $("quick").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); quickAdd(); } });
-$("quick-add").addEventListener("click", quickAdd);
+function openNewIdea() {
+  if (ui.mode === "loading") return;
+  openDraft(newIdea());
+}
+/* A new idea lives only on screen until its first edit, so closing an untouched page leaves nothing behind. */
+let draftIdea = null;
+function openDraft(idea) {
+  draftIdea = idea; S.ideas[idea.id] = idea;
+  renderAll(); openDrawer(idea.id);
+}
+$("new-idea").addEventListener("click", openNewIdea);
+$("quick-add").addEventListener("click", () => { if ($("quick").value.trim()) quickAdd(); else openNewIdea(); });
+$("quick-file").addEventListener("change", e => { const files = [...e.target.files]; e.target.value = ""; handleFiles(files, "new"); });
 $("search").addEventListener("input", e => { ui.q = e.target.value.trim(); renderList(); renderCalendar(); });
 function syncTabs() { $("tab-un").setAttribute("aria-pressed", ui.tab === "un"); $("tab-all").setAttribute("aria-pressed", ui.tab === "all"); }
 $("tab-un").addEventListener("click", () => { ui.tab = "un"; syncTabs(); renderList(); });
@@ -1002,16 +1086,48 @@ $("today").addEventListener("click", () => { ui.cursor = startOfDay(new Date());
 function setView(v) { ui.view = v; $("v-month").setAttribute("aria-pressed", v === "month"); $("v-week").setAttribute("aria-pressed", v === "week"); try { localStorage.setItem("batchbook-view", v); } catch (e) {} renderCalendar(); }
 $("v-month").addEventListener("click", () => setView("month"));
 $("v-week").addEventListener("click", () => setView("week"));
-$("f-brand").addEventListener("change", e => { ui.brand = e.target.value; if (ui.creator && S.creators[ui.creator]?.brandId !== ui.brand && ui.brand) ui.creator = ""; renderAll(); });
-$("f-creator").addEventListener("change", e => { ui.creator = e.target.value; renderAll(); });
+$("f-brand").addEventListener("change", e => {
+  ui.brand = e.target.value;
+  if (ui.brand) [...ui.creators].forEach(id => { if (S.creators[id]?.brandId !== ui.brand) ui.creators.delete(id); });
+  setCreators([...ui.creators]);
+});
+$("f-creator").addEventListener("click", () => {
+  const pop = $("f-creator-pop"), open = pop.hidden;
+  if (open) renderCreatorPop();
+  pop.hidden = !open; $("f-creator").setAttribute("aria-expanded", open);
+});
+$("f-creator-pop").addEventListener("change", e => { const id = e.target.dataset.pick; if (id) toggleCreator(id); });
+$("f-creator-pop").addEventListener("click", e => {
+  if (e.target.closest("[data-pick-all]")) setCreators([]);
+  if (e.target.closest("[data-pick-none]")) setCreators(["__none__"]);
+});
+document.addEventListener("mousedown", e => { if (!$("f-creator-pop").hidden && !e.target.closest(".pick-wrap")) { $("f-creator-pop").hidden = true; $("f-creator").setAttribute("aria-expanded", "false"); } });
+$("legend").addEventListener("click", e => {
+  const b = e.target.closest("[data-legend]"); if (!b) return;
+  if (e.altKey || e.metaKey || e.ctrlKey) setCreators([b.dataset.legend]); else toggleCreator(b.dataset.legend);
+});
 $("f-sell").addEventListener("change", e => { ui.sell = e.target.value; renderAll(); });
 $("open-settings").addEventListener("click", openSettings);
+const THEMES = ["auto", "light", "dark"];
+function applyTheme(t) {
+  if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  $("theme").textContent = "Theme: " + t[0].toUpperCase() + t.slice(1);
+}
+let theme = "auto";
+try { const t = localStorage.getItem("batchbook-theme"); if (THEMES.includes(t)) theme = t; } catch (e) {}
+if (theme !== "auto") applyTheme(theme);
+$("theme").addEventListener("click", () => {
+  theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+  applyTheme(theme);
+  try { localStorage.setItem("batchbook-theme", theme); } catch (e) {}
+});
 $("mode").addEventListener("click", e => { if (e.target.closest("[data-open-settings]")) openSettings(); });
 $("scrim").addEventListener("click", () => { if (!$("settings").hidden) closeSettings(); else closeDrawer(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("menu").hidden) closeMenu(); else if (!$("settings").hidden) closeSettings(); else if (ui.openId) closeDrawer(); } });
 
 $("sort").addEventListener("change", e => { ui.sort = e.target.value; try { localStorage.setItem("batchbook-sort", ui.sort); } catch (err) {} renderList(); });
 try { const v = localStorage.getItem("batchbook-view"); if (v === "week") setView("week"); } catch (e) {}
+try { const c = JSON.parse(localStorage.getItem("batchbook-creators") || "[]"); if (Array.isArray(c)) ui.creators = new Set(c.map(String)); } catch (e) {}
 try { const s = localStorage.getItem("batchbook-sort"); if (s && $("sort").querySelector(`option[value="${s}"]`)) { ui.sort = s; $("sort").value = s; } } catch (e) {}
 boot();
 initOcr();
