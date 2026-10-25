@@ -121,8 +121,8 @@ button { cursor: pointer; }
 .list.drop { background: var(--accent-soft); }
 .empty { color: var(--faint); font-size: 13px; padding: 16px 6px; text-align: center; }
 
-.idea { background: var(--card); border-radius: 6px; box-shadow: var(--shadow); padding: 8px 10px; display: grid; gap: 5px; cursor: grab; text-align: left; border: 0; width: 100%; }
-.idea:hover { background: color-mix(in srgb, var(--card) 94%, var(--fg)); }
+.idea { background: var(--tint, var(--card)); border-radius: 6px; box-shadow: var(--shadow); padding: 8px 10px; display: grid; gap: 5px; cursor: grab; text-align: left; border: 0; width: 100%; }
+.idea:hover { background: color-mix(in srgb, var(--tint, var(--card)) 94%, var(--fg)); }
 .idea:active { cursor: grabbing; }
 .idea.dragging { opacity: .4; }
 .idea-title { font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
@@ -172,10 +172,10 @@ button { cursor: pointer; }
 .add-day:hover { background: var(--hover); }
 .cal.week .day { min-height: 420px; }
 
-.chip { background: var(--card); box-shadow: var(--shadow); border-radius: 4px; padding: 4px 6px; border: 0; text-align: left; width: 100%; display: grid; gap: 2px; cursor: grab; min-width: 0; }
+.chip { background: var(--tint, var(--card)); box-shadow: var(--shadow); border-radius: 4px; padding: 4px 6px; border: 0; text-align: left; width: 100%; display: grid; gap: 2px; cursor: grab; min-width: 0; }
 .chip.ins-before { box-shadow: 0 -3px 0 -1px var(--accent), var(--shadow); }
 .day.ins-end::after { content: ""; height: 2px; border-radius: 2px; background: var(--accent); margin-top: 1px; }
-.chip:hover { background: color-mix(in srgb, var(--card) 94%, var(--fg)); }
+.chip:hover { background: color-mix(in srgb, var(--tint, var(--card)) 94%, var(--fg)); }
 .chip-top { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .chip-title { font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .chip-meta { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -239,6 +239,10 @@ button { cursor: pointer; }
 .row input:hover, .row select:hover { background: var(--hover); }
 .row input:focus, .row select:focus { border-color: var(--accent); }
 .swatch { width: 22px; height: 22px; border-radius: 4px; border: 0; padding: 0; }
+input.swatch, .row input.swatch { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; }
+input.swatch::-webkit-color-swatch-wrapper { padding: 0; }
+input.swatch::-webkit-color-swatch { border: 0; border-radius: 4px; }
+input.swatch::-moz-color-swatch { border: 0; border-radius: 4px; }
 .count { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; z-index: 40; max-width: calc(100% - 32px); }
@@ -338,6 +342,22 @@ button { cursor: pointer; }
 
 <script>
 const COLORS = ["gray", "brown", "orange", "yellow", "green", "blue", "purple", "pink", "red"];
+const PALETTE_HEX = { gray: "#9b9a97", brown: "#a27763", orange: "#d9730d", yellow: "#cb912f", green: "#448361", blue: "#337ea9", purple: "#9065b0", pink: "#c14c8a", red: "#d44c47" };
+const EXTRA = { teal: "#0f9d8f", cyan: "#0ea5c6", sky: "#3b9ae1", indigo: "#5b5fd6", violet: "#8b5cf6", rose: "#e0457b", coral: "#f06a4b", amber: "#e39b0b", lime: "#7cb518", mint: "#2fb38a", olive: "#8a8a2e", slate: "#64748b", navy: "#1f3a8a", maroon: "#8b1e3f", lavender: "#a78bfa", peach: "#f59e7b" };
+const ALL_COLORS = [...COLORS, ...Object.keys(EXTRA)];
+const colorHex = color => EXTRA[color] || (/^#[0-9a-f]{6}$/i.test(color || "") ? color : null);
+const swatchHex = color => colorHex(color) || PALETTE_HEX[color] || PALETTE_HEX.gray;
+/* Attributes that give a tag, dot or pill its color. The original 9 have tuned light and dark tints; the rest are mixed from their hex. */
+function cAttr(color) {
+  const hex = colorHex(color);
+  if (!hex) return `data-c="${COLORS.includes(color) ? color : "gray"}"`;
+  return `data-c="x" style="--c-dot:${hex};--c-bg:color-mix(in srgb, ${hex} 28%, var(--card));--c-fg:var(--fg)"`;
+}
+const dotOf = color => colorHex(color) || `var(--t-${COLORS.includes(color) ? color : "gray"}-dot)`;
+function nextColor(list, offset) {
+  const used = new Set(list.map(x => x.color));
+  return ALL_COLORS.filter(c => c !== "gray").concat("gray").find(c => !used.has(c)) || ALL_COLORS[(list.length + offset) % ALL_COLORS.length];
+}
 const SELL = { soft: { label: "Soft sell", c: "green" }, hard: { label: "Hard sell", c: "red" }, viral: { label: "Virality", c: "purple" } };
 const STATUS = { idea: "Idea", ready: "Ready", posted: "Posted" };
 const FORMATS = ["Carousel", "Single image", "Video", "Text post", "Thread"];
@@ -500,7 +520,7 @@ function renderAll(fromSnapshot) {
   if (!$("settings").hidden && !$("settings").contains(document.activeElement)) renderSettings();
 }
 
-function creatorTag(c) { return c ? `<span class="tag" data-c="${esc(c.color)}">${esc(c.name)}</span>` : ""; }
+function creatorTag(c) { return c ? `<span class="tag" ${cAttr(c.color)}>${esc(c.name)}</span>` : ""; }
 function sellTag(s) { const v = SELL[s]; return v ? `<span class="tag" data-c="${v.c}">${v.label}</span>` : ""; }
 
 function renderList() {
@@ -524,16 +544,21 @@ function renderList() {
     const groups = sortedVals(S.creators).map(c => ({ c, items: shown.filter(i => i.creatorId === c.id) }));
     groups.push({ c: null, items: shown.filter(i => !S.creators[i.creatorId]) });
     list.innerHTML = groups.filter(g => g.items.length).map(g =>
-      `<div class="group-h">${g.c ? `<i class="dot" data-c="${esc(g.c.color)}"></i>${esc(g.c.name)}` : "Unassigned"}<span class="n">${g.items.length}</span></div>` + g.items.map(ideaCard).join("")
+      `<div class="group-h">${g.c ? `<i class="dot" ${cAttr(g.c.color)}></i>${esc(g.c.name)}` : "Unassigned"}<span class="n">${g.items.length}</span></div>` + g.items.map(ideaCard).join("")
     ).join("");
   } else list.innerHTML = shown.map(ideaCard).join("");
+}
+/* Boxes take a light wash of their brand color so brands are easy to tell apart. */
+function tintAttr(i) {
+  const b = S.brands[brandOf(i)];
+  return b && b.color ? ` style="--tint:color-mix(in srgb, ${dotOf(b.color)} 13%, var(--card))"` : "";
 }
 function slidesOf(i) { return Array.isArray(i.slides) ? i.slides : []; }
 function ideaCard(i) {
     const c = S.creators[i.creatorId];
     const first = slidesOf(i).find(s => s && s.trim());
     const sub = first ? first.split("\n").filter(Boolean).slice(0, 2).join("\n") : i.content ? i.content.split("\n").filter(Boolean).slice(0, 2).join("\n") : (i.link || "");
-    return `<button class="idea" type="button" draggable="true" data-id="${esc(i.id)}">
+    return `<button class="idea" type="button" draggable="true" data-id="${esc(i.id)}"${tintAttr(i)}>
       <span class="idea-title">${esc(i.title || "Untitled")}${i.link ? ' <span class="link-ico" title="Has a link">↗</span>' : ""}</span>
       ${sub ? `<span class="idea-sub">${esc(sub)}</span>` : ""}
       <span class="tags">${i.date ? `<span class="tag when">${fmtShort(i.date)}</span>` : ""}${creatorTag(c)}${sellTag(i.sell)}${i.pillar ? `<span class="tag">${esc(i.pillar)}</span>` : ""}</span>
@@ -574,14 +599,14 @@ function renderCalendar() {
 function chip(i) {
   const c = S.creators[i.creatorId];
   const meta = [c && c.name, SELL[i.sell] && SELL[i.sell].label, ui.view === "week" ? i.pillar : ""].filter(Boolean).join(" · ");
-  return `<button class="chip${i.status === "posted" ? " posted" : ""}" type="button" draggable="true" data-id="${esc(i.id)}" title="${esc(i.title)}">
-    <span class="chip-top"><span class="dot" data-c="${esc(c ? c.color : "gray")}"></span><span class="chip-title">${i.status === "posted" ? "✓ " : ""}${esc(i.title || "Untitled")}</span></span>
+  return `<button class="chip${i.status === "posted" ? " posted" : ""}" type="button" draggable="true" data-id="${esc(i.id)}" title="${esc(i.title)}"${tintAttr(i)}>
+    <span class="chip-top"><span class="dot" ${cAttr(c ? c.color : "gray")}></span><span class="chip-title">${i.status === "posted" ? "✓ " : ""}${esc(i.title || "Untitled")}</span></span>
     ${meta ? `<span class="chip-meta">${esc(meta)}</span>` : ""}
   </button>`;
 }
 function renderLegend() {
   const cs = sortedVals(S.creators).filter(c => !ui.brand || c.brandId === ui.brand);
-  $("legend").innerHTML = cs.map(c => `<button type="button" data-legend="${esc(c.id)}" class="${ui.creators.size && !ui.creators.has(c.id) ? "off" : ""}" title="Show or hide ${esc(c.name)}"><i class="dot" data-c="${esc(c.color)}"></i>${esc(c.name)}${Object.keys(S.brands).length > 1 && S.brands[c.brandId] ? ` <span style="color:var(--faint)">${esc(S.brands[c.brandId].name)}</span>` : ""}</button>`).join("");
+  $("legend").innerHTML = cs.map(c => `<button type="button" data-legend="${esc(c.id)}" class="${ui.creators.size && !ui.creators.has(c.id) ? "off" : ""}" title="Show or hide ${esc(c.name)}"><i class="dot" ${cAttr(c.color)}></i>${esc(c.name)}${Object.keys(S.brands).length > 1 && S.brands[c.brandId] ? ` <span style="color:var(--faint)">${esc(S.brands[c.brandId].name)}</span>` : ""}</button>`).join("");
 }
 function visibleCreators() { return sortedVals(S.creators).filter(c => !ui.brand || c.brandId === ui.brand); }
 function setCreators(ids) {
@@ -599,7 +624,7 @@ function toggleCreator(id) {
 function renderCreatorPop() {
   const pop = $("f-creator-pop");
   const brands = sortedVals(S.brands).filter(b => !ui.brand || b.id === ui.brand);
-  const row = c => `<label><input type="checkbox" data-pick="${esc(c.id)}"${!ui.creators.size || ui.creators.has(c.id) ? " checked" : ""}><i class="dot" data-c="${esc(c.color)}"></i>${esc(c.name)}</label>`;
+  const row = c => `<label><input type="checkbox" data-pick="${esc(c.id)}"${!ui.creators.size || ui.creators.has(c.id) ? " checked" : ""}><i class="dot" ${cAttr(c.color)}></i>${esc(c.name)}</label>`;
   const groups = brands.map(b => { const cs = visibleCreators().filter(c => c.brandId === b.id); return cs.length ? (brands.length > 1 ? `<div class="pop-h">${esc(b.name)}</div>` : "") + cs.map(row).join("") : ""; }).join("");
   const loose = visibleCreators().filter(c => !S.brands[c.brandId]).map(row).join("");
   pop.innerHTML = (groups + loose || `<div class="pop-h">No creators yet</div>`) +
@@ -616,7 +641,7 @@ function renderFilters() {
   if (!$("f-creator-pop").hidden) renderCreatorPop();
   const vis = visibleCreators();
   $("side-creators").innerHTML = vis.length ? `<button type="button" class="cpill all" data-cpill="" aria-pressed="${!ui.creators.size}">All</button>` +
-    vis.map(c => `<button type="button" class="cpill" data-c="${esc(c.color)}" data-cpill="${esc(c.id)}" aria-pressed="${ui.creators.has(c.id)}"><i class="dot" data-c="${esc(c.color)}"></i>${esc(c.name)}</button>`).join("") : "";
+    vis.map(c => `<button type="button" class="cpill" ${cAttr(c.color)} data-cpill="${esc(c.id)}" aria-pressed="${ui.creators.has(c.id)}"><i class="dot" ${cAttr(c.color)}></i>${esc(c.name)}</button>`).join("") : "";
   keep($("f-sell"), `<option value="">Any goal</option>` + Object.entries(SELL).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join(""), ui.sell);
 }
 
@@ -970,7 +995,14 @@ addEventListener("scroll", closeMenu, true);
 /* ---------- settings: brands & creators ---------- */
 function openSettings() { renderSettings(); $("settings").hidden = false; $("scrim").hidden = false; }
 function closeSettings() { $("settings").hidden = true; if ($("drawer").hidden) $("scrim").hidden = true; }
-function colorSelect(cls, val) { return `<select class="${cls}" aria-label="Color">${COLORS.map(c => `<option value="${c}"${c === val ? " selected" : ""}>${c}</option>`).join("")}</select>`; }
+/* A preset dropdown plus the swatch, which opens the system color picker for any color. */
+function swatchInput(val) {
+  return `<input type="color" class="swatch" data-f="color" value="${esc(swatchHex(val))}" title="Click to pick any color" aria-label="Pick any color">`;
+}
+function presetSelect(val, width) {
+  const custom = !ALL_COLORS.includes(val);
+  return `<select data-f="color" aria-label="Color"${width ? ` style="width:${width}px"` : ""}>${custom ? `<option value="${esc(val)}" selected>custom</option>` : ""}${ALL_COLORS.map(c => `<option value="${c}"${c === val ? " selected" : ""}>${c}</option>`).join("")}</select>`;
+}
 function renderSettings() {
   const brands = sortedVals(S.brands);
   const used = id => Object.values(S.ideas).filter(i => i.creatorId === id).length;
@@ -979,9 +1011,9 @@ function renderSettings() {
     <div class="rows">
       <h3>Brands</h3>
       ${brands.map(b => `<div class="row brand" data-brand="${esc(b.id)}">
-        <span class="swatch" data-c="${esc(b.color)}"></span>
+        ${swatchInput(b.color)}
         <input value="${esc(b.name)}" data-f="name" aria-label="Brand name">
-        ${colorSelect("", b.color).replace("<select", '<select data-f="color"')}
+        ${presetSelect(b.color)}
         <button class="btn danger" type="button" data-del-brand="${esc(b.id)}">Remove</button>
       </div>`).join("")}
       <div><button class="btn" type="button" id="add-brand">+ Add brand</button></div>
@@ -989,11 +1021,11 @@ function renderSettings() {
     <div class="rows">
       <h3>Creators</h3>
       ${sortedVals(S.creators).map(c => `<div class="row" data-creator="${esc(c.id)}">
-        <span class="swatch" data-c="${esc(c.color)}"></span>
+        ${swatchInput(c.color)}
         <input value="${esc(c.name)}" data-f="name" aria-label="Creator name">
         <input class="handle-in" value="${esc(c.handle || "")}" data-f="handle" placeholder="@handle" aria-label="Handle">
         <select data-f="brandId" aria-label="Brand"><option value="">No brand</option>${brands.map(b => `<option value="${esc(b.id)}"${b.id === c.brandId ? " selected" : ""}>${esc(b.name)}</option>`).join("")}</select>
-        <span style="display:flex;align-items:center;gap:4px">${colorSelect("", c.color).replace("<select", '<select data-f="color" style="width:84px"')}<button class="btn danger" type="button" data-del-creator="${esc(c.id)}" title="${used(c.id)} ideas assigned">Remove</button></span>
+        <span style="display:flex;align-items:center;gap:4px">${presetSelect(c.color, 84)}<button class="btn danger" type="button" data-del-creator="${esc(c.id)}" title="${used(c.id)} ideas assigned">Remove</button></span>
       </div>`).join("")}
       <div><button class="btn" type="button" id="add-creator">+ Add creator</button></div>
     </div>
@@ -1029,13 +1061,13 @@ $("settings").addEventListener("click", e => {
   }
   if (e.target.id === "add-brand") {
     const n = Object.keys(S.brands).length;
-    put("brands", { id: uid("brand"), name: "New brand", color: COLORS[(n + 4) % COLORS.length], order: n });
+    put("brands", { id: uid("brand"), name: "New brand", color: nextColor(Object.values(S.brands), 4), order: n });
     renderSettings(); const ins = $("settings").querySelectorAll("[data-brand] input"); ins[ins.length - 1]?.select();
     return;
   }
   if (e.target.id === "add-creator") {
     const n = Object.keys(S.creators).length;
-    put("creators", { id: uid("creator"), name: "New creator", handle: "", brandId: ui.brand || (sortedVals(S.brands)[0] || {}).id || "", color: COLORS[(n + 1) % COLORS.length], order: n });
+    put("creators", { id: uid("creator"), name: "New creator", handle: "", brandId: ui.brand || (sortedVals(S.brands)[0] || {}).id || "", color: nextColor(Object.values(S.creators), 1), order: n });
     renderSettings(); const ins = $("settings").querySelectorAll("[data-creator] input[data-f=name]"); ins[ins.length - 1]?.select();
     return;
   }
